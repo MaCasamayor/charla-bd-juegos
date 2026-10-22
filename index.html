@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La tarjeta clonada · SAETA</title>
+  <link rel="stylesheet" href="identidad/tokens.css">
+  <link rel="stylesheet" href="juegos.css">
+  <script src="datos.js" defer></script>
+  <script src="juegos.js" defer></script>
+</head>
+<body>
+  <noscript><p class="aviso">Este juego necesita JavaScript activado.</p></noscript>
+  <header class="barra" id="barra" hidden>
+    <span class="barra__equipo" id="b-equipo"></span>
+    <span class="barra__reloj" id="b-reloj" aria-label="Tiempo de la fase">--:--</span>
+    <span class="barra__puntos" id="b-puntos"></span>
+  </header>
+  <main id="app" class="app" tabindex="-1"></main>
+  <div id="anuncio" class="solo-lector" aria-live="polite" role="status"></div>
+</body>
+</html>
