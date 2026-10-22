@@ -1,0 +1,82 @@
+/* Identidad visual: el caso Don Dato.
+   Fuente única de colores, tipografías y medidas para diapositivas y materiales.
+   Guía de uso: identidad/identidad.md */
+
+/* Fuentes guardadas en el repo (OFL, licencias en fuentes/): la charla anda sin wifi.
+   Subconjunto latino: cubre tildes, ñ, ° y ·. */
+@font-face { font-family: "Oswald"; src: url("fuentes/oswald-latin.woff2") format("woff2"); font-weight: 200 700; font-display: swap; }
+@font-face { font-family: "Source Sans 3"; src: url("fuentes/source-sans-3-latin.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fuentes/ibm-plex-mono-400-latin.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("fuentes/ibm-plex-mono-600-latin.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  /* Papel y tinta: el expediente */
+  --papel: #f4ecda;        /* fondo de toda lámina */
+  --carpeta: #e6d5b0;      /* carpeta manila: pestañas, fichas, encabezados de tabla */
+  --linea: #c9b78f;        /* bordes y separadores */
+  --tinta: #1f1a15;        /* texto principal */
+  --tinta-suave: #5a5044;  /* texto secundario, notas */
+
+  /* Señales: cada color dice una sola cosa */
+  --sello: #b3261e;        /* alerta, error, sello del caso, puntera del marcador */
+  --inocente: #1f6b45;     /* resuelto, correcto, inocente */
+  --resaltador: #f6d44a;   /* fondo de lo marcado (nunca como color de texto) */
+
+  /* Láminas oscuras: solo para la resolución del caso */
+  --pizarra: #1f1a15;
+  --pizarra-texto: #f4ecda;
+
+  /* Tarjetas de votación (P4): color + símbolo + palabra, para que se distingan sin color */
+  --voto-si: #1f6b45;      /* ✓ SÍ */
+  --voto-duda: #e0b10f;    /* ? NO SÉ (texto en tinta) */
+  --voto-no: #b3261e;      /* ✕ NO */
+
+  /* Tipografías */
+  --f-titulo: "Oswald", "Arial Narrow", sans-serif;           /* títulos y sellos, en mayúsculas */
+  --f-texto: "Source Sans 3", "Segoe UI", sans-serif;         /* todo lo que se lee */
+  --f-dato: "IBM Plex Mono", "Consolas", monospace;           /* datos del caso: planilla, fichas, números */
+
+  /* Escala para láminas 16:9. Se mide en cqw (1cqw = 1 % del ancho de la lámina),
+     así una lámina de 1920 px da: titular 96 px, texto 40 px, dato 28 px.
+     Nada en pantalla baja de --t-min: se tiene que leer desde el fondo del aula. */
+  --t-titular: 5cqw;
+  --t-subtitulo: 3cqw;
+  --t-texto: 2.1cqw;
+  --t-dato: 1.46cqw;
+  --t-min: 1.46cqw;
+
+  --espacio: 2.5cqw;       /* margen interno de la lámina */
+  --radio: 0.4cqw;         /* esquinas: casi rectas, es papel */
+  --sombra: 0 0.3cqw 0 var(--linea);  /* papel apilado, sin difuminado */
+}
+
+/* Lámina base: todas las diapositivas heredan de acá */
+.lamina {
+  container-type: inline-size;
+  aspect-ratio: 16 / 9;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--f-texto);
+  overflow: hidden;
+  position: relative;
+}
+.lamina--pizarra {
+  background: var(--pizarra);
+  color: var(--pizarra-texto);
+}
+
+/* Sello: una palabra o dos, con borde, girado. Uno solo por lámina. */
+.sello {
+  display: inline-block;
+  font-family: var(--f-titulo);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sello);
+  border: 0.35cqw solid currentColor;
+  border-radius: var(--radio);
+  padding: 0.3cqw 1.2cqw;
+  transform: rotate(-6deg);
+  font-size: var(--t-subtitulo);
+}
+.sello--inocente { color: var(--inocente); }
