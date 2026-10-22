@@ -55,7 +55,7 @@
     return {
       equipo: "", fase: "inicio", inicioFase: 0,
       f1: { orden: mezclar(D.fase1.datos.map(function (d) { return d.id; })), puestos: {}, sel: null, verificado: false, puntos: 0 },
-      f2: { tab: "viajes", filtros: { linea: null, hora: null, tarjeta: null }, pistas: 0, destino: null, resuelto: false, puntos: 0 }
+      f2: { tab: "viajes", filtros: { linea: null, hora: null, tarjeta: null }, pistas: 0, errores: 0, destino: null, resuelto: false, puntos: 0 }
     };
   }
   function guardar() {
@@ -139,7 +139,7 @@
     } else {
       pie.appendChild(h("span", { text: "¿Borrar todo y empezar de cero?" }));
       pie.appendChild(h("button", { class: "btn btn--chico", type: "button", text: "Sí, reiniciar", onclick: function () {
-        borrarGuardado(); S = nuevo(); ui = { filtroAbierto: null, respondiendo: false, mensaje: null, confirmando: false, aviso: "", vencidoAnunciado: {} }; render();
+        var r = (S.reinicios || 0) + 1; borrarGuardado(); S = nuevo(); S.reinicios = r; ui = { filtroAbierto: null, respondiendo: false, mensaje: null, confirmando: false, aviso: "", vencidoAnunciado: {} }; render();
       } }));
       pie.appendChild(h("button", { class: "btn btn--sec btn--chico", type: "button", text: "No", onclick: function () { ui.confirmando = false; render(); } }));
     }
@@ -333,7 +333,7 @@
     app.appendChild(acciones);
 
     if (ui.respondiendo && !f2.resuelto) {
-      var sec = h("section", { class: "ficha", "aria-label": "Elegí al pasajero" }, h("h3", { text: "¿A quién hay que avisarle?" }));
+      var sec = h("section", { class: "ficha", "aria-label": "Elegí al pasajero" }, h("h3", { text: "¿A quién hay que avisarle?" }), h("p", { class: "etiqueta", text: "Cada respuesta mal resta " + D.fase2.costoPista + "." }));
       var rl = h("ul", { class: "respuestas" });
       D.pasajeros.forEach(function (p) {
         rl.appendChild(h("li", null, h("button", { class: "dato", type: "button", text: p.id + " · " + p.nombre + " · " + p.barrio, onclick: function () { responder(p.id); } })));
@@ -350,10 +350,11 @@
   }
   function responder(id) {
     if (id === D.fase2.respuesta) {
-      S.f2.resuelto = true; S.f2.puntos = Math.max(0, D.fase2.puntosAcierto - S.f2.pistas * D.fase2.costoPista);
+      S.f2.resuelto = true; S.f2.puntos = Math.max(0, D.fase2.puntosAcierto - (S.f2.pistas + (S.f2.errores || 0)) * D.fase2.costoPista);
       ui.respondiendo = false; ui.mensaje = null; render(); anunciar(D.fase2.mensajeAcierto);
     } else {
-      ui.mensaje = { ok: false, texto: id === D.fase2.trampa.id ? D.fase2.trampa.mensaje : D.fase2.mensajeError };
+      S.f2.errores = (S.f2.errores || 0) + 1;
+      ui.mensaje = { ok: false, texto: (id === D.fase2.trampa.id ? D.fase2.trampa.mensaje : D.fase2.mensajeError) + " (−" + D.fase2.costoPista + ")" };
       render(); anunciar(ui.mensaje.texto);
     }
   }
@@ -363,7 +364,11 @@
     var t = total();
     app.appendChild(h("p", { class: "etiqueta", text: "Resultado de " + S.equipo }));
     app.appendChild(h("div", { class: "final__puntos", "aria-label": t + " puntos", text: String(t) }));
-    app.appendChild(h("p", { class: "final__desglose", text: "Fase 1: " + (S.f1.verificado ? S.f1.puntos : 0) + " · Fase 2: " + puntosF2() + (S.f2.pistas ? " (con " + S.f2.pistas + (S.f2.pistas === 1 ? " pista)" : " pistas)") : "") }));
+    var desc = [];
+    if (S.f2.pistas) desc.push(S.f2.pistas + (S.f2.pistas === 1 ? " pista" : " pistas"));
+    if (S.f2.errores) desc.push(S.f2.errores + (S.f2.errores === 1 ? " respuesta mal" : " respuestas mal"));
+    app.appendChild(h("p", { class: "final__desglose", text: "Fase 1: " + (S.f1.verificado ? S.f1.puntos : 0) + " · Fase 2: " + puntosF2() + (desc.length ? " (" + desc.join(", ") + ")" : "") }));
+    if (S.reinicios) app.appendChild(h("p", { class: "mensaje mensaje--mal", text: "Este equipo reinició el juego " + S.reinicios + (S.reinicios === 1 ? " vez." : " veces.") }));
     app.appendChild(h("p", { class: "mensaje", text: "Díganlo en voz alta para el marcador." }));
     app.appendChild(h("h2", { text: "El camino corto" }));
     var ol = h("ol", { class: "camino" });
