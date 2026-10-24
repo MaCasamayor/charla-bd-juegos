@@ -163,9 +163,11 @@
     if (!ui.confirmando) {
       pie.appendChild(h("button", { class: "btn btn--sec btn--chico", type: "button", onclick: function () { ui.confirmando = true; render(); }, text: "Reiniciar" }));
     } else {
-      pie.appendChild(h("span", { text: "¿Borrar todo y empezar de cero?" }));
+      pie.appendChild(h("span", { text: "¿Borrar las respuestas y empezar de cero? El reloj de cada fase sigue corriendo." }));
       pie.appendChild(h("button", { class: "btn btn--chico", type: "button", text: "Sí, reiniciar", onclick: function () {
-        var r = (S.reinicios || 0) + 1; borrarGuardado(); S = nuevo(); S.reinicios = r; ui = uiNuevo(); render();
+        /* El reloj se conserva: reiniciar no da tiempo nuevo para repetir una fase ya vista */
+        var r = (S.reinicios || 0) + 1, ini = S.inicios;
+        borrarGuardado(); S = nuevo(); S.reinicios = r; S.inicios = ini; ui = uiNuevo(); guardar(); render();
       } }));
       pie.appendChild(h("button", { class: "btn btn--sec btn--chico", type: "button", text: "No", onclick: function () { ui.confirmando = false; render(); } }));
     }
