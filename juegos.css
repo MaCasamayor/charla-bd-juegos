@@ -129,6 +129,45 @@ p { margin: 0 0 .75rem; }
 .camino li { margin-bottom: .5rem; }
 .pie { margin-top: 1.5rem; padding-top: .75rem; border-top: 1px solid var(--linea); display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 
+/* Veredicto bien/mal (con símbolo: no depende solo del color) */
+.veredicto { display: inline-block; font-family: var(--f-dato); font-weight: 600; font-size: .9rem; }
+.veredicto--ok { color: var(--inocente); }
+.veredicto--mal { color: var(--sello); }
+
+/* Fase 2: pares */
+.pares { display: flex; flex-direction: column; gap: .6rem; margin: .75rem 0; }
+.par h3 { margin-bottom: .25rem; }
+.par--ok { border-left: 6px solid var(--inocente); }
+.par--mal { border-left: 6px solid var(--sello); }
+.opciones-par { display: flex; flex-wrap: wrap; gap: .35rem; margin: .4rem 0; }
+.opciones-par .opcion { flex: 1 1 6rem; }
+.opciones-par .opcion[disabled] { cursor: default; }
+
+/* Fase 3: planilla */
+.filas--planilla { gap: .35rem; margin: .75rem 0; }
+.fila-planilla {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; width: 100%; min-height: 48px; padding: .35rem .6rem;
+  font-family: var(--f-dato); font-size: .92rem; text-align: left; color: var(--tinta); background: #fffaf0; border: 1px solid var(--linea); border-left: 5px solid var(--carpeta);
+}
+button.fila-planilla { cursor: pointer; }
+.fila-planilla[aria-pressed="true"] { background: var(--resaltador); border: 2px solid var(--tinta); border-left-width: 8px; }
+.fila-planilla--ok { border: 2px solid var(--inocente); }
+.fila-planilla--mal { border: 2px solid var(--sello); }
+.fila-planilla .marca { margin-left: auto; font-weight: 600; color: var(--sello); }
+
+/* Final: código y explicaciones */
+.codigo label { display: block; font-weight: 600; margin-bottom: .35rem; }
+.codigo input {
+  width: 100%; min-height: 48px; padding: .5rem .75rem; font: inherit; font-family: var(--f-dato); letter-spacing: .15em; text-transform: uppercase;
+  border: 2px solid var(--tinta); background: #fff; color: var(--tinta);
+}
+.expl { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.expl li { padding: .4rem .6rem; background: #fffaf0; border: 1px solid var(--linea); overflow-wrap: anywhere; }
+.tarifas { border-collapse: collapse; margin: .5rem 0 .75rem; font-family: var(--f-dato); }
+.tarifas caption { text-align: left; font-weight: 600; margin-bottom: .25rem; }
+.tarifas th, .tarifas td { border: 1px solid var(--tinta); padding: .3rem .7rem; text-align: left; }
+.tarifa--cambia { background: var(--resaltador); font-weight: 600; }
+
 @media (min-width: 900px) {
   .cajas { grid-template-columns: repeat(4, 1fr); }
   .app { padding: 1.5rem; }
