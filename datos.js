@@ -1,6 +1,8 @@
 /* Datos del juego G1 «La tarjeta clonada».
    Copia de docs/caso-saeta.md (fuente única). Todo es inventado.
-   Si cambia el doc, se cambia acá; el código (juegos.js) no depende de qué datos son. */
+   Si cambia el doc, se cambia acá; el código (juegos.js) no depende de qué datos son.
+   Acá NO van las respuestas correctas ni los «por qué»: viven como hashes y cifrado
+   en secretos.js (ver herramientas/generar.js). */
 window.DATOS = (function () {
   var pasajeros = [
     { id: "P01", nombre: "Juan Pérez", barrio: "Tres Cerritos" },
@@ -36,15 +38,28 @@ window.DATOS = (function () {
     ["V19", "18:02", "7B", "0001-9032"], ["V20", "18:30", "1B", "0001-6094"]
   ].map(function (v) { return { id: v[0], hora: v[1], linea: v[2], tarjeta: v[3] }; });
 
-  var pPas = "Tiene N° de pasajero, nombre y barrio: es una fila de la tabla Pasajeros.";
-  var pTar = "Dice el N° de tarjeta, el tipo y a qué pasajero pertenece: es una fila de la tabla Tarjetas.";
-  var pVia = "Tiene hora, línea y la tarjeta con la que se pagó: es una fila de la tabla Viajes.";
-  var pOut = "El sistema no necesita guardarlo para cobrar un viaje: queda afuera. Si importara, habría que preguntarle al cliente.";
+  /* Los 15 datos de la fase 1, en un orden fijo mezclado a propósito: que el orden
+     del archivo no delate la caja. La caja correcta está solo en secretos.js. */
+  var datosF1 = [
+    ["a01", "V11 · 08:40 · 7B · 0001-9032"], ["a02", "El chofer saludó"],
+    ["a03", "0001-7718 · estudiantil · P08"], ["a04", "P03 · Lucía Sosa · Centro"],
+    ["a05", "V01 · 07:42 · 1B · 0001-1203"], ["a06", "0001-3350 · jubilado · P05"],
+    ["a07", "P01 · Juan Pérez · Tres Cerritos"], ["a08", "Llovía a la mañana"],
+    ["a09", "V16 · 13:05 · 5C · 0001-8240"], ["a10", "P08 · Sofía Ríos · Castañares"],
+    ["a11", "0001-6094 · común · P07"], ["a12", "V12 · 08:47 · 1B · 0001-5126"],
+    ["a13", "El colectivo era azul"], ["a14", "0001-8240 · común · P08"],
+    ["a15", "P02 · Juan Pérez · Grand Bourg"]
+  ].map(function (d) { return { id: d[0], texto: d[1] }; });
+
+  var tarifas = [
+    { tipo: "común", precio: "$1.000" }, { tipo: "estudiantil", precio: "$500" }, { tipo: "jubilado", precio: "$0" }
+  ];
 
   return {
     titulo: "La tarjeta clonada",
-    storageKey: "charlabd-g1-v1",
-    duraciones: { 1: 180, 2: 240 },   /* segundos por fase */
+    storageKey: "charlabd-g1-v2",
+    fases: 4,
+    duraciones: { 1: 300, 2: 300, 3: 300, 4: 300 },   /* segundos por fase */
 
     cajas: [
       { id: "pasajeros", nombre: "Pasajeros", ayuda: "Personas" },
@@ -56,53 +71,61 @@ window.DATOS = (function () {
     pasajeros: pasajeros,
     tarjetas: tarjetas,
     viajes: viajes,
+    tarifas: tarifas,
 
-    /* Fase 1: 15 datos con su caja correcta y el «por qué» */
+    /* Fase 1: ordenar 15 datos */
     fase1: {
-      consigna: "Tocá un dato y después la caja donde va. Si te equivocás, tocá el dato de la caja para sacarlo.",
+      consigna: "Tocá un dato y después la caja donde va. Si te equivocás, tocá el dato de la caja para sacarlo. Hay una sola verificación.",
       puntaje: [ { minimo: 15, puntos: 3 }, { minimo: 12, puntos: 2 }, { minimo: 9, puntos: 1 } ],
-      datos: [
-        { id: "d01", texto: "P01 · Juan Pérez · Tres Cerritos", caja: "pasajeros", porque: pPas },
-        { id: "d02", texto: "P02 · Juan Pérez · Grand Bourg", caja: "pasajeros", porque: pPas },
-        { id: "d03", texto: "P03 · Lucía Sosa · Centro", caja: "pasajeros", porque: pPas },
-        { id: "d04", texto: "P08 · Sofía Ríos · Castañares", caja: "pasajeros", porque: pPas },
-        { id: "d05", texto: "0001-6094 · común · P07", caja: "tarjetas", porque: pTar },
-        { id: "d06", texto: "0001-7718 · estudiantil · P08", caja: "tarjetas", porque: pTar },
-        { id: "d07", texto: "0001-8240 · común · P08", caja: "tarjetas", porque: pTar },
-        { id: "d08", texto: "0001-3350 · jubilado · P05", caja: "tarjetas", porque: pTar },
-        { id: "d09", texto: "V01 · 07:42 · 1B · 0001-1203", caja: "viajes", porque: pVia },
-        { id: "d10", texto: "V11 · 08:40 · 7B · 0001-9032", caja: "viajes", porque: pVia },
-        { id: "d11", texto: "V12 · 08:47 · 1B · 0001-5126", caja: "viajes", porque: pVia },
-        { id: "d12", texto: "V16 · 13:05 · 5C · 0001-8240", caja: "viajes", porque: pVia },
-        { id: "d13", texto: "El colectivo era azul", caja: "afuera", porque: pOut },
-        { id: "d14", texto: "Llovía a la mañana", caja: "afuera", porque: pOut },
-        { id: "d15", texto: "El chofer saludó", caja: "afuera", porque: pOut }
+      datos: datosF1
+    },
+
+    /* Fase 2: conectá el modelo */
+    fase2: {
+      consigna: "Para cada par, elegí cómo se relacionan: 1 a 1, 1 a muchos o muchos a muchos. Hay una sola verificación.",
+      opciones: [ { id: "1a1", nombre: "1 a 1" }, { id: "1aM", nombre: "1 a muchos" }, { id: "MaM", nombre: "muchos a muchos" } ],
+      puntaje: [ { minimo: 4, puntos: 3 }, { minimo: 3, puntos: 2 }, { minimo: 2, puntos: 1 } ],
+      pares: [
+        { id: "pas-tar", a: "Pasajero", b: "Tarjeta", ayuda: "¿Un pasajero puede tener más de una tarjeta? ¿Una tarjeta puede ser de dos pasajeros?" },
+        { id: "tar-via", a: "Tarjeta", b: "Viaje", ayuda: "¿Una tarjeta hace muchos viajes? ¿Un viaje se paga con dos tarjetas?" },
+        { id: "lin-par", a: "Línea", b: "Parada", ayuda: "¿Una línea pasa por muchas paradas? ¿En una parada paran muchas líneas?" },
+        { id: "col-val", a: "Colectivo", b: "Validadora", ayuda: "¿Un colectivo tiene una validadora? ¿Una validadora está en un colectivo?" }
+      ],
+      notas: "Parada: donde sube la gente. Colectivo: la unidad. Validadora: la máquina del colectivo donde se apoya la tarjeta."
+    },
+
+    /* Fase 3: el precio que cambia. La planilla es el dato; cuáles están mal, solo en secretos.js */
+    fase3: {
+      consigna: "Desde hoy el boleto común cuesta $1.200. El estudiantil y el de jubilados no cambian. Alguien actualizó la planilla vieja, que tiene el precio copiado en cada viaje, y se equivocó. Tocá las filas que quedaron mal. Hay una sola verificación y cada fila marcada de más resta.",
+      filas: [
+        { id: "V04", tarjeta: "0001-3350", tipo: "jubilado", precio: "$1.200" },
+        { id: "V09", tarjeta: "0001-2587", tipo: "común", precio: "$1.200" },
+        { id: "V10", tarjeta: "0001-1203", tipo: "común", precio: "$1.000" },
+        { id: "V11", tarjeta: "0001-9032", tipo: "común", precio: "$1.200" },
+        { id: "V12", tarjeta: "0001-5126", tipo: "común", precio: "$1.200" },
+        { id: "V13", tarjeta: "0001-7718", tipo: "estudiantil", precio: "$1.200" },
+        { id: "V14", tarjeta: "0001-1203", tipo: "común", precio: "$1.200" },
+        { id: "V15", tarjeta: "0001-9032", tipo: "común", precio: "$1.200" },
+        { id: "V16", tarjeta: "0001-8240", tipo: "común", precio: "$1.000" },
+        { id: "V17", tarjeta: "0001-2587", tipo: "común", precio: "$1.200" }
       ]
     },
 
-    /* Fase 2: el misterio */
-    fase2: {
+    /* Fase 4: el misterio */
+    fase4: {
       consigna: "SAETA detectó una tarjeta que pagó dos viajes en el mismo minuto, en líneas distintas. Alguien la clonó. ¿A quién hay que avisarle?",
-      respuesta: "P02",                 /* N° de pasajero correcto */
       puntosAcierto: 3,
       costoPista: 1,
-      /* Pasajero «trampa»: mismo nombre que la respuesta, otra clave */
-      trampa: { id: "P01", mensaje: "Ese Juan tiene otra tarjeta. ¿Cuál es la clave?" },
+      /* Mensaje de la respuesta «trampa»; cuál es, solo el hash en secretos.js */
+      mensajeTrampa: "Ese Juan tiene otra tarjeta. ¿Cuál es la clave?",
       mensajeError: "No es esa persona. Probá de nuevo.",
       mensajeAcierto: "¡Correcto! Le avisamos al pasajero indicado.",
-      /* Pistas en orden: hora → tarjeta → pasajero */
+      /* Pistas en orden: dicen cómo buscar, no qué se encuentra (eso va cifrado al final) */
       pistas: [
-        "Filtrá por Hora: a las 08:14 hay dos viajes en líneas distintas.",
-        "Los dos viajes de las 08:14 se pagaron con la tarjeta 0001-4471. Tocala.",
-        "La tarjeta 0001-4471 es del pasajero P02. Mirá su ficha en Pasajeros."
-      ],
-      /* Camino corto para la pantalla final */
-      camino: [
-        "Filtraste Viajes por la hora 08:14: dos viajes, líneas 3A y 7B, con la misma tarjeta.",
-        "Seguiste la relación: esa tarjeta, 0001-4471, es del pasajero P02.",
-        "La clave (N° de pasajero) distingue a los dos Juan Pérez: el que hay que llamar es el de Grand Bourg."
-      ],
-      cierre: "Sin clave, hubiéramos llamado al Juan equivocado."
+        "Filtrá Viajes por Hora y buscá una hora que aparezca dos veces, con líneas distintas.",
+        "Los dos viajes de esa hora se pagaron con la misma tarjeta. Tocá el número de tarjeta.",
+        "Tocá el N° de pasajero de esa tarjeta y mirá su ficha en Pasajeros."
+      ]
     }
   };
 })();

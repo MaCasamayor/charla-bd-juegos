@@ -1,0 +1,135 @@
+{
+  "f1": {
+    "a01": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a02": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a03": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a04": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a05": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a06": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a07": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a08": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a09": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a10": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a11": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a12": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a13": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a14": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    },
+    "a15": {
+      "caja": "COMPLETAR (pasajeros|tarjetas|viajes|afuera)",
+      "porque": "COMPLETAR"
+    }
+  },
+  "f2": {
+    "pas-tar": {
+      "resp": "COMPLETAR (1a1|1aM|MaM)",
+      "porque": "COMPLETAR"
+    },
+    "tar-via": {
+      "resp": "COMPLETAR (1a1|1aM|MaM)",
+      "porque": "COMPLETAR"
+    },
+    "lin-par": {
+      "resp": "COMPLETAR (1a1|1aM|MaM)",
+      "porque": "COMPLETAR"
+    },
+    "col-val": {
+      "resp": "COMPLETAR (1a1|1aM|MaM)",
+      "porque": "COMPLETAR"
+    }
+  },
+  "f3": {
+    "V04": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V09": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V10": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V11": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V12": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V13": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V14": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V15": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V16": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "V17": {
+      "mal": "COMPLETAR (true|false)",
+      "porque": "COMPLETAR"
+    },
+    "cierre": "COMPLETAR"
+  },
+  "f4": {
+    "resp": "COMPLETAR (N° de pasajero)",
+    "trampa": "COMPLETAR (N° de pasajero de la trampa)",
+    "camino": [
+      "COMPLETAR",
+      "COMPLETAR",
+      "COMPLETAR"
+    ],
+    "cierre": "COMPLETAR"
+  }
+}
