@@ -57,7 +57,7 @@ window.DATOS = (function () {
 
   return {
     titulo: "La tarjeta clonada",
-    storageKey: "charlabd-g1-v3",
+    storageKey: "charlabd-g1-v4",
     /* Al empezar, el nombre del equipo se publica acá y lo muestra el marcador de las láminas.
        Solo viaja el nombre. Si falla (sin señal), el juego sigue igual. */
     avisoEquipos: "https://ntfy.sh/charla-saeta-equipos-b595994d61",
