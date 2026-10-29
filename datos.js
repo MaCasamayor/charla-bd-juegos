@@ -57,7 +57,10 @@ window.DATOS = (function () {
 
   return {
     titulo: "La tarjeta clonada",
-    storageKey: "charlabd-g1-v2",
+    storageKey: "charlabd-g1-v4",
+    /* Al empezar, el nombre del equipo se publica acá y lo muestra el marcador de las láminas.
+       Solo viaja el nombre. Si falla (sin señal), el juego sigue igual. */
+    avisoEquipos: "https://ntfy.sh/charla-saeta-equipos-b595994d61",
     fases: 4,
     duraciones: { 1: 300, 2: 300, 3: 300, 4: 300 },   /* segundos por fase */
 
@@ -75,14 +78,32 @@ window.DATOS = (function () {
 
     /* Fase 1: ordenar 15 datos */
     fase1: {
-      consigna: "Tocá un dato y después la caja donde va. Si te equivocás, tocá el dato de la caja para sacarlo. Hay una sola verificación.",
+      consigna: "Arrastren cada tarjeta de la bandeja a su caja. Para sacar una de una caja, tóquenla una vez.",
+      intro: {
+        que: "Tienen 15 datos sueltos de SAETA. Cada uno va en la caja de la tabla donde se guardaría: Pasajeros, Tarjetas o Viajes. Lo que el sistema no necesita guardar va a Afuera.",
+        como: [
+          "Arrastren cada tarjeta de la bandeja de abajo hasta su caja. También pueden tocar la tarjeta y después la caja.",
+          "Para sacar una tarjeta de una caja, tóquenla una vez: vuelve a la bandeja.",
+          "Cuando estén seguros, toquen Verificar."
+        ],
+        puntos: "Hay una sola verificación. Las cajas que no quedaron bien se marcan en rojo, sin decir qué tarjeta está mal. 15 bien = 3 puntos · 12 a 14 = 2 · 9 a 11 = 1."
+      },
       puntaje: [ { minimo: 15, puntos: 3 }, { minimo: 12, puntos: 2 }, { minimo: 9, puntos: 1 } ],
       datos: datosF1
     },
 
     /* Fase 2: conectá el modelo */
     fase2: {
-      consigna: "Para cada par, elegí cómo se relacionan: 1 a 1, 1 a muchos o muchos a muchos. Hay una sola verificación.",
+      consigna: "Para cada par, elijan cómo se relacionan: 1 a 1, 1 a muchos o muchos a muchos.",
+      intro: {
+        que: "Hay 4 pares de partes del sistema. Para cada par, elijan cómo se relacionan: 1 a 1, 1 a muchos o muchos a muchos.",
+        como: [
+          "Lean la pregunta de ayuda de cada par: piensen cuántos hay de cada lado.",
+          "Toquen la opción que eligen. Pueden cambiarla hasta verificar.",
+          "Cuando tengan los 4, toquen Verificar."
+        ],
+        puntos: "Hay una sola verificación. 4 bien = 3 puntos · 3 = 2 · 2 = 1."
+      },
       opciones: [ { id: "1a1", nombre: "1 a 1" }, { id: "1aM", nombre: "1 a muchos" }, { id: "MaM", nombre: "muchos a muchos" } ],
       puntaje: [ { minimo: 4, puntos: 3 }, { minimo: 3, puntos: 2 }, { minimo: 2, puntos: 1 } ],
       pares: [
@@ -96,7 +117,16 @@ window.DATOS = (function () {
 
     /* Fase 3: el precio que cambia. La planilla es el dato; cuáles están mal, solo en secretos.js */
     fase3: {
-      consigna: "Desde hoy el boleto común cuesta $1.200. El estudiantil y el de jubilados no cambian. Alguien actualizó la planilla vieja, que tiene el precio copiado en cada viaje, y se equivocó. Tocá las filas que quedaron mal. Hay una sola verificación y cada fila marcada de más resta.",
+      consigna: "Común: $1.200 · estudiantil: $500 · jubilado: $0. Toquen las filas que quedaron mal.",
+      intro: {
+        que: "Desde hoy el boleto común cuesta $1.200; el estudiantil sigue en $500 y el de jubilados en $0. Alguien actualizó una planilla vieja, que tiene el precio copiado en cada viaje, y se equivocó.",
+        como: [
+          "Revisen cada fila: el tipo de boleto y el precio que quedó.",
+          "Toquen las filas que quedaron mal. Si tocan una de nuevo, se desmarca.",
+          "Cuando estén seguros, toquen Verificar."
+        ],
+        puntos: "Hay una sola verificación. Cuantas más filas mal encuentren, más puntos (hasta 3). Cada fila bien que marquen como mal resta 1."
+      },
       filas: [
         { id: "V04", tarjeta: "0001-3350", tipo: "jubilado", precio: "$1.200" },
         { id: "V09", tarjeta: "0001-2587", tipo: "común", precio: "$1.200" },
@@ -114,6 +144,15 @@ window.DATOS = (function () {
     /* Fase 4: el misterio */
     fase4: {
       consigna: "SAETA detectó una tarjeta que pagó dos viajes en el mismo minuto, en líneas distintas. Alguien la clonó. ¿A quién hay que avisarle?",
+      intro: {
+        que: "SAETA detectó una tarjeta que pagó dos viajes en el mismo minuto, en líneas distintas: alguien la clonó. Tienen que encontrar a qué pasajero hay que avisarle.",
+        como: [
+          "Busquen en las pestañas Viajes, Tarjetas y Pasajeros. En Viajes pueden filtrar por línea, hora o tarjeta.",
+          "Si tocan un número de tarjeta o de pasajero, salta a su ficha.",
+          "Cuando lo sepan, toquen «Ya sé quién es» y elijan a la persona."
+        ],
+        puntos: "Acertar = 3 puntos, y +1 al primer equipo que acierta (sale en la pantalla). Cada pista y cada respuesta mal restan 1."
+      },
       puntosAcierto: 3,
       costoPista: 1,
       /* Mensaje de la respuesta «trampa»; cuál es, solo el hash en secretos.js */

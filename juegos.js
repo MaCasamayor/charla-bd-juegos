@@ -48,14 +48,14 @@
   function porId(lista, id) { for (var i = 0; i < lista.length; i++) if (lista[i].id === id) return lista[i]; return null; }
   function unicos(a) { var r = []; a.forEach(function (x) { if (r.indexOf(x) < 0) r.push(x); }); return r; }
   function pts(n) { return n + (n === 1 ? " punto" : " puntos"); }
-  function uiNuevo() { return { filtroAbierto: null, respondiendo: false, mensaje: null, confirmando: false, aviso: "", ocupado: false, error: "", vencidoAnunciado: {}, revelado: null, codigoMal: false }; }
+  function uiNuevo() { return { filtroAbierto: null, respondiendo: false, mensaje: null, confirmando: false, aviso: "", ocupado: false, error: "", vencidoAnunciado: {}, revelado: null, codigoMal: false, confirmaVerif: null }; }
 
   /* ---------- estado ---------- */
   function nuevo() {
     return {
       equipo: "", fase: "inicio", reinicios: 0,
       inicios: {},   /* inicio de cada fase (ms): recargar no reinicia el reloj */
-      f1: { orden: mezclar(D.fase1.datos.map(function (d) { return d.id; })), puestos: {}, sel: null, cerrada: null, res: {}, puntos: 0 },
+      f1: { orden: mezclar(D.fase1.datos.map(function (d) { return d.id; })), puestos: {}, sel: null, cerrada: null, res: {}, cajasMal: {}, puntos: 0 },
       f2: { resp: {}, cerrada: null, res: {}, puntos: 0 },
       f3: { marcas: {}, cerrada: null, res: {}, puntos: 0 },
       f4: { tab: "viajes", filtros: { linea: null, hora: null, tarjeta: null }, pistas: 0, errores: 0, destino: null, cerrada: null, puntos: 0 }
@@ -108,7 +108,7 @@
     render(); anunciar("¡Se acabó el tiempo! Esta fase cierra con 0 puntos.");
   }
   function tick() {
-    if (typeof S.fase !== "number") { bReloj.textContent = "--:--"; bReloj.classList.remove("vencido"); return; }
+    if (typeof S.fase !== "number" || !S.inicios[S.fase]) { bReloj.textContent = "--:--"; bReloj.classList.remove("vencido"); return; }
     var f = S["f" + S.fase];
     if (!f.cerrada && vencida(S.fase)) { cerrarPorTiempo(); return; }
     if (f.cerrada) { bReloj.textContent = f.cerrada === "tiempo" ? "¡Tiempo!" : "--:--"; bReloj.classList.toggle("vencido", f.cerrada === "tiempo"); return; }
@@ -125,11 +125,12 @@
 
   /* ---------- render ---------- */
   function render() {
-    var tray = app.querySelector(".bandeja");
+    var tray = app.querySelector(".bandeja__fila");
     var sx = tray ? tray.scrollLeft : 0;
     var sy = window.scrollY;
     app.textContent = "";
     if (S.fase === "inicio") vistaInicio();
+    else if (typeof S.fase === "number" && !S.inicios[S.fase]) vistaConsigna(S.fase);
     else if (S.fase === 1) vistaF1();
     else if (S.fase === 2) vistaF2();
     else if (S.fase === 3) vistaF3();
@@ -137,20 +138,19 @@
     else vistaFinal();
     if (ui.error) app.insertBefore(h("p", { class: "mensaje mensaje--mal", role: "alert", text: ui.error }), app.firstChild);
     barraActualizar();
-    var t2 = app.querySelector(".bandeja");
+    var t2 = app.querySelector(".bandeja__fila");
     if (t2) t2.scrollLeft = sx;
     window.scrollTo(0, sy);
     guardar();
   }
-  /* Solo se entra a una fase si la anterior está cerrada; el reloj de cada fase arranca una vez. */
+  /* Solo se entra a una fase si la anterior está cerrada. El reloj arranca con «Entendido» (vistaConsigna). */
   function cambiarFase(f) {
     if (typeof f === "number" && f > 1 && !S["f" + (f - 1)].cerrada) return;
     if (f === "final" && !S.f4.cerrada) return;
     S.fase = f;
-    if (typeof f === "number" && !S.inicios[f]) S.inicios[f] = Date.now();
-    ui.filtroAbierto = null; ui.respondiendo = false; ui.mensaje = null; ui.confirmando = false; ui.error = "";
+    ui.filtroAbierto = null; ui.respondiendo = false; ui.mensaje = null; ui.confirmando = false; ui.confirmaVerif = null; ui.error = "";
     render(); window.scrollTo(0, 0);
-    anunciar(typeof f === "number" ? "Fase " + f + ": " + TITULOS[f] + "." : "Resultado final.");
+    anunciar(typeof f === "number" ? "Fase " + f + ": " + TITULOS[f] + ". Lean la consigna." : "Resultado final.");
   }
   function falloCrypto(e) {
     ui.ocupado = false;
@@ -166,8 +166,8 @@
       pie.appendChild(h("span", { text: "¿Borrar las respuestas y empezar de cero? El reloj de cada fase sigue corriendo." }));
       pie.appendChild(h("button", { class: "btn btn--chico", type: "button", text: "Sí, reiniciar", onclick: function () {
         /* El reloj se conserva: reiniciar no da tiempo nuevo para repetir una fase ya vista */
-        var r = (S.reinicios || 0) + 1, ini = S.inicios;
-        borrarGuardado(); S = nuevo(); S.reinicios = r; S.inicios = ini; ui = uiNuevo(); guardar(); render();
+        var r = (S.reinicios || 0) + 1, ini = S.inicios, av = S.avisado;
+        borrarGuardado(); S = nuevo(); S.reinicios = r; S.inicios = ini; S.avisado = av; ui = uiNuevo(); guardar(); render();
       } }));
       pie.appendChild(h("button", { class: "btn btn--sec btn--chico", type: "button", text: "No", onclick: function () { ui.confirmando = false; render(); } }));
     }
@@ -180,14 +180,13 @@
     var res = h("div", { class: "resultado", id: "res-f" + n, tabindex: "-1", "aria-live": "polite" },
       h("div", { class: "grande", text: tiempo ? "Se acabó el tiempo · 0 puntos" : texto + " · " + pts(f.puntos) }));
     if (tiempo) res.appendChild(h("p", { text: "La fase cerró sin verificar. Las soluciones se ven en el proyector al final." }));
-    else res.appendChild(h("p", { text: "El celular solo dice bien o mal. Las soluciones se ven en el proyector al final." }));
+    else res.appendChild(h("p", { text: (n === 1 ? "Las cajas en rojo quedaron incompletas." : "El celular solo dice bien o mal.") + " Las soluciones se ven en el proyector al final." }));
     var sig = n < D.fases ? n + 1 : "final";
     res.appendChild(h("div", { class: "acciones" }, h("button", { class: "btn", type: "button",
       text: n < D.fases ? "Seguir a la fase " + (n + 1) : "Ver el resultado", onclick: function () { cambiarFase(sig); } })));
     return res;
   }
   function enfocarCierre(n) { var r = document.getElementById("res-f" + n); if (r) { r.focus(); r.scrollIntoView({ block: "start" }); } }
-  function insignia(ok) { return h("span", { class: "veredicto veredicto--" + (ok ? "ok" : "mal"), text: ok ? "✔ Bien" : "✘ Mal" }); }
   function encabezado(n) {
     app.appendChild(h("h2", { text: "Fase " + n + " de " + D.fases + " · " + TITULOS[n] }));
   }
@@ -206,11 +205,12 @@
       ev.preventDefault();
       var n = input.value.trim();
       if (!n) { input.focus(); anunciar("Escribí el nombre del equipo."); return; }
-      S.equipo = n; cambiarFase(1);
+      S.equipo = n; avisar("equipo"); cambiarFase(1);
     } },
-      h("p", { class: "etiqueta", text: "SAETA · datos inventados" }),
+      h("p", { class: "etiqueta", text: "SAETA · Centro de control" }),
       h("h1", { text: D.titulo }),
       h("p", { text: "Cuatro fases de 5 minutos: ordenar datos, conectar el modelo, corregir una planilla y resolver un misterio. Un celular por equipo." }),
+      h("p", { text: "Antes de cada fase van a ver qué hay que hacer. El reloj arranca cuando toquen «Entendido»." }),
       h("label", { for: "nombre", text: "Nombre del equipo" }),
       input,
       h("div", { class: "acciones" }, h("button", { class: "btn", type: "submit", text: "Empezar" }))
@@ -218,38 +218,185 @@
     app.appendChild(form);
   }
 
-  /* ----- Fase 1: ordenar ----- */
-  function datoBtn(d) {
-    var f1 = S.f1, cerrada = !!f1.cerrada, ver = f1.cerrada === "verificada";
-    var ok = ver && f1.res[d.id];
-    var cls = "dato" + (ver ? (ok ? " dato--ok dato--fijo" : " dato--mal dato--fijo") : cerrada ? " dato--fijo" : "");
-    var b = h(cerrada ? "div" : "button", { class: cls, type: cerrada ? null : "button", "aria-pressed": cerrada ? null : String(f1.sel === d.id) });
-    b.appendChild(h("span", { text: d.texto }));
-    if (ver) b.appendChild(h("span", { class: "porque" }, insignia(ok)));
-    else if (!cerrada) {
-      b.addEventListener("click", function () {
-        if (f1.puestos[d.id]) { delete f1.puestos[d.id]; f1.sel = null; anunciar("Volvió a la bandeja."); }
-        else { f1.sel = f1.sel === d.id ? null : d.id; anunciar(f1.sel ? "Dato elegido. Tocá una caja." : "Dato soltado."); }
-        render();
-      });
+  /* Avisos al marcador de las láminas: el nombre al entrar, el misterio resuelto y los
+     puntos del final. Sin señal no pasa nada: el marcador se carga a mano (tecla M). */
+  function avisar(tipo, extra) {
+    if (!D.avisoEquipos || !window.fetch) return;
+    var m = { t: tipo, n: S.equipo };
+    if (extra) Object.keys(extra).forEach(function (k) { m[k] = extra[k]; });
+    try { fetch(D.avisoEquipos, { method: "POST", body: JSON.stringify(m), keepalive: true }).catch(function () { /* sin señal */ }); } catch (e) { /* nada */ }
+  }
+  function avisarUnaVez(tipo, extra) {
+    S.avisado = S.avisado || {};
+    if (S.avisado[tipo]) return;
+    S.avisado[tipo] = true; guardar();
+    avisar(tipo, extra);
+  }
+
+  /* Una sola verificación: si falta completar algo, primero se pregunta. */
+  function botonVerificar(n, faltan, accion, texto) {
+    var cont = h("div", { class: "acciones" });
+    if (faltan && ui.confirmaVerif === n) {
+      cont.appendChild(h("p", { class: "mensaje mensaje--mal", role: "alert", text: faltan + " Hay una sola verificación. ¿Verificar igual?" }));
+      cont.appendChild(h("button", { class: "btn", type: "button", disabled: ui.ocupado, text: "Sí, verificar", onclick: accion }));
+      cont.appendChild(h("button", { class: "btn btn--sec", type: "button", text: "Seguir completando", onclick: function () { ui.confirmaVerif = null; render(); } }));
+    } else {
+      cont.appendChild(h("button", { class: "btn", type: "button", disabled: ui.ocupado, text: texto || "Verificar", onclick: function () {
+        if (faltan) { ui.confirmaVerif = n; render(); return; }
+        accion();
+      } }));
     }
+    return cont;
+  }
+
+  /* ----- Consigna de cada fase ----- */
+  function vistaConsigna(n) {
+    var I = D["fase" + n].intro;
+    encabezado(n);
+    var pasos = h("ol", { class: "pasos" });
+    I.como.forEach(function (t) { pasos.appendChild(h("li", { text: t })); });
+    app.appendChild(h("section", { class: "consigna consigna--intro" },
+      h("h3", { text: "Qué hay que hacer" }), h("p", { text: I.que }),
+      h("h3", { text: "Cómo se hace" }), pasos,
+      h("h3", { text: "Cómo se puntúa" }), h("p", { text: I.puntos })));
+    app.appendChild(h("p", { class: "etiqueta", text: "El reloj de 5 minutos arranca cuando toquen «Entendido»." }));
+    app.appendChild(h("div", { class: "acciones" }, h("button", { class: "btn", type: "button", text: "Entendido", onclick: function () {
+      if (S.fase !== n) return;
+      if (!S.inicios[n]) S.inicios[n] = Date.now();
+      render(); window.scrollTo(0, 0); anunciar("Arrancó el reloj de la fase " + n + ".");
+    } })));
+  }
+
+  /* ----- Fase 1: ordenar ----- */
+  /* Una tarjeta de la fase 1. En la bandeja se arrastra (o se toca y después se toca la caja);
+     en una caja, un toque la devuelve a la bandeja. Cerrada, no dice si está bien o mal. */
+  function datoBtn(d) {
+    var f1 = S.f1, cerrada = !!f1.cerrada, enCaja = !!f1.puestos[d.id];
+    var b = h(cerrada ? "div" : "button", { class: "dato" + (cerrada ? " dato--fijo" : ""), type: cerrada ? null : "button",
+      "aria-pressed": cerrada || enCaja ? null : String(f1.sel === d.id),
+      "aria-label": cerrada ? null : d.texto + (enCaja ? ". Tocá para devolverla a la bandeja." : ". Arrastrala a su caja o tocala y después tocá la caja.") });
+    b.appendChild(h("span", { text: d.texto }));
+    if (cerrada) return b;
+    b.addEventListener("click", function () {
+      if (soltadoRecien) return;
+      if (f1.puestos[d.id]) { delete f1.puestos[d.id]; f1.sel = null; anunciar("Volvió a la bandeja."); }
+      else { f1.sel = f1.sel === d.id ? null : d.id; anunciar(f1.sel ? "Tarjeta elegida. Tocá una caja." : "Tarjeta soltada."); }
+      render();
+    });
+    if (!enCaja) b.addEventListener("pointerdown", function (ev) { tomar(ev, d, b); });
     return b;
+  }
+
+  /* ----- Arrastrar y soltar (mouse y dedo, con Pointer Events) ----- */
+  var arrastre = null, soltadoRecien = false;
+  function cajaEn(x, y) {
+    var e = document.elementFromPoint(x, y);
+    var c = e && e.closest ? e.closest(".caja[data-caja]") : null;
+    return c ? c.getAttribute("data-caja") : null;
+  }
+  function marcarEncima(id) {
+    app.querySelectorAll(".caja[data-caja]").forEach(function (c) { c.classList.toggle("caja--encima", c.getAttribute("data-caja") === id); });
+  }
+  function tomar(ev, d, b) {
+    if (S.f1.cerrada || arrastre || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+    arrastre = { id: d.id, b: b, x0: ev.clientX, y0: ev.clientY, x: ev.clientX, y: ev.clientY, activo: false, fantasma: null, raf: 0 };
+    window.addEventListener("pointermove", mover, { passive: false });
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", cancelar);
+  }
+  function mover(ev) {
+    var a = arrastre;
+    if (!a) return;
+    a.x = ev.clientX; a.y = ev.clientY;
+    if (!a.activo) {
+      if (Math.abs(a.x - a.x0) + Math.abs(a.y - a.y0) < 8) return;
+      a.activo = true;
+      var r = a.b.getBoundingClientRect();
+      a.dx = a.x0 - r.left; a.dy = a.y0 - r.top;
+      a.fantasma = a.b.cloneNode(true);
+      a.fantasma.className = "dato dato--fantasma";
+      a.fantasma.style.width = r.width + "px";
+      a.fantasma.setAttribute("aria-hidden", "true");
+      document.body.appendChild(a.fantasma);
+      a.b.classList.add("dato--arrastrando");
+      a.raf = requestAnimationFrame(autoScroll);
+    }
+    ev.preventDefault();
+    a.fantasma.style.transform = "translate(" + (a.x - a.dx) + "px," + (a.y - a.dy) + "px) rotate(-2deg)";
+    marcarEncima(cajaEn(a.x, a.y));
+  }
+  /* Cerca del borde de la pantalla, la página se desliza sola para llegar a las cajas */
+  function autoScroll() {
+    var a = arrastre;
+    if (!a || !a.activo) return;
+    var borde = 70, v = 0;
+    if (a.y < borde) v = -Math.ceil((borde - a.y) / 6);
+    else if (a.y > window.innerHeight - borde) v = Math.ceil((a.y - window.innerHeight + borde) / 6);
+    if (v) { window.scrollBy(0, v); marcarEncima(cajaEn(a.x, a.y)); }
+    a.raf = requestAnimationFrame(autoScroll);
+  }
+  function terminar() {
+    window.removeEventListener("pointermove", mover, { passive: false });
+    window.removeEventListener("pointerup", soltar);
+    window.removeEventListener("pointercancel", cancelar);
+    var a = arrastre;
+    arrastre = null;
+    if (a) {
+      cancelAnimationFrame(a.raf);
+      if (a.fantasma) a.fantasma.remove();
+      a.b.classList.remove("dato--arrastrando");
+    }
+    marcarEncima(null);
+    return a;
+  }
+  function soltar(ev) {
+    var a = terminar();
+    if (!a || !a.activo) return;
+    /* el click que el navegador manda después de soltar no tiene que deshacer nada */
+    soltadoRecien = true;
+    setTimeout(function () { soltadoRecien = false; }, 0);
+    var caja = cajaEn(ev.clientX, ev.clientY);
+    if (!caja || S.fase !== 1 || S.f1.cerrada) return;
+    S.f1.puestos[a.id] = caja; S.f1.sel = null;
+    anunciar("Tarjeta en " + porId(D.cajas, caja).nombre + ".");
+    render();
+  }
+  function cancelar() { terminar(); }
+
+  /* Para las tarjetas mal o sin ubicar, busca su caja probando los hashes: así se sabe
+     qué cajas quedaron incompletas sin mostrar cuál tarjeta está mal. */
+  function cajaCorrecta(id) {
+    return Promise.all(D.cajas.map(function (c) { return L.coincide(SEC, "f1:" + id, c.id); })).then(function (rs) {
+      for (var i = 0; i < rs.length; i++) if (rs[i]) return D.cajas[i].id;
+      return null;
+    });
   }
   function verificarF1() {
     if (ui.ocupado || !puedeVerificar(1)) return;
     ui.ocupado = true;
-    evaluar(D.fase1.datos.map(function (d) { return { k: d.id, pregunta: "f1:" + d.id, resp: S.f1.puestos[d.id] }; })).then(function (res) {
+    var f1 = S.f1;
+    evaluar(D.fase1.datos.map(function (d) { return { k: d.id, pregunta: "f1:" + d.id, resp: f1.puestos[d.id] }; })).then(function (res) {
+      var malas = D.fase1.datos.filter(function (d) { return !res[d.id]; });
+      return Promise.all(malas.map(function (d) { return cajaCorrecta(d.id); })).then(function (deberian) {
+        var cajasMal = {};
+        malas.forEach(function (d, i) {
+          if (f1.puestos[d.id]) cajasMal[f1.puestos[d.id]] = true;   /* tiene una que no va */
+          if (deberian[i]) cajasMal[deberian[i]] = true;           /* le falta una */
+        });
+        return { res: res, cajasMal: cajasMal };
+      });
+    }).then(function (v) {
       ui.ocupado = false;
       if (!puedeVerificar(1)) return;
-      S.f1.res = res; S.f1.puntos = L.puntosPorEscala(cuantos(res), D.fase1.puntaje);
-      S.f1.cerrada = "verificada"; S.f1.sel = null;
+      f1.res = v.res; f1.cajasMal = v.cajasMal; f1.puntos = L.puntosPorEscala(cuantos(v.res), D.fase1.puntaje);
+      f1.cerrada = "verificada"; f1.sel = null;
       render(); enfocarCierre(1);
     }, falloCrypto);
   }
   function vistaF1() {
-    var datos = D.fase1.datos, f1 = S.f1, cerrada = !!f1.cerrada;
+    var datos = D.fase1.datos, f1 = S.f1, cerrada = !!f1.cerrada, ver = f1.cerrada === "verificada";
     encabezado(1);
-    app.appendChild(h("p", { text: D.fase1.consigna }));
+    app.appendChild(h("p", { class: "consigna", text: D.fase1.consigna }));
 
     var cajas = h("div", { class: "cajas" });
     D.cajas.forEach(function (c) {
@@ -258,23 +405,26 @@
       f1.orden.forEach(function (id) {
         if (f1.puestos[id] === c.id) { n++; lista.appendChild(h("li", null, datoBtn(porId(datos, id)))); }
       });
-      var btn = h("button", { class: "caja__btn", type: "button", disabled: cerrada, "aria-label": "Caja " + c.nombre + ", " + n + " datos. Tocá para poner el dato elegido.", onclick: function () {
-        if (!f1.sel) { anunciar("Primero tocá un dato de la bandeja."); ui.aviso = "Primero tocá un dato."; avisoF1(); return; }
-        f1.puestos[f1.sel] = c.id; f1.sel = null; anunciar("Dato en " + c.nombre + "."); render();
-      } }, h("b", { text: c.nombre + " (" + n + ")" }), h("span", { text: c.ayuda }));
-      cajas.appendChild(h("section", { class: "caja caja--" + c.id }, btn, lista));
+      if (!n && !cerrada) lista.appendChild(h("li", { class: "caja__vacia", text: "Suelten acá" }));
+      var mal = ver && f1.cajasMal && f1.cajasMal[c.id];
+      var btn = h("button", { class: "caja__btn", type: "button", disabled: cerrada, "aria-label": "Caja " + c.nombre + ", " + n + " tarjetas" + (mal ? ", incompleta" : "") + ". Tocá para poner la tarjeta elegida.", onclick: function () {
+        if (!f1.sel) { anunciar("Primero elegí una tarjeta de la bandeja."); avisoF1(); return; }
+        f1.puestos[f1.sel] = c.id; f1.sel = null; anunciar("Tarjeta en " + c.nombre + "."); render();
+      } }, h("b", { text: c.nombre + " (" + n + ")" }), h("span", { text: mal ? "Quedó incompleta" : c.ayuda }));
+      cajas.appendChild(h("section", { class: "caja caja--" + c.id + (mal ? " caja--incompleta" : ""), "data-caja": c.id }, btn, lista));
     });
     app.appendChild(cajas);
 
     var sin = f1.orden.filter(function (id) { return !f1.puestos[id]; });
-    app.appendChild(h("p", { class: "etiqueta", id: "aviso-f1", text: cerrada ? "" : (ui.aviso || ("Sin ubicar: " + sin.length + " de " + datos.length)) }));
-    ui.aviso = "";
     if (!cerrada) {
-      var bandeja = h("div", { class: "bandeja", role: "group", "aria-label": "Bandeja de datos" });
-      if (!sin.length) bandeja.appendChild(h("span", { class: "bandeja__vacia", text: "Bandeja vacía. Verificá." }));
-      sin.forEach(function (id) { bandeja.appendChild(datoBtn(porId(datos, id))); });
+      var bandeja = h("div", { class: "bandeja", role: "group", "aria-label": "Bandeja de tarjetas" },
+        h("p", { class: "etiqueta", id: "aviso-f1", text: "Bandeja · sin ubicar: " + sin.length + " de " + datos.length }));
+      var fila = h("div", { class: "bandeja__fila" });
+      if (!sin.length) fila.appendChild(h("span", { class: "bandeja__vacia", text: "Bandeja vacía. Verifiquen." }));
+      sin.forEach(function (id) { fila.appendChild(datoBtn(porId(datos, id))); });
+      bandeja.appendChild(fila);
+      bandeja.appendChild(botonVerificar(1, sin.length ? "Quedan " + sin.length + " tarjetas en la bandeja." : "", verificarF1));
       app.appendChild(bandeja);
-      app.appendChild(h("div", { class: "acciones" }, h("button", { class: "btn", type: "button", disabled: ui.ocupado, text: "Verificar", onclick: verificarF1 })));
     } else {
       if (sin.length) {
         app.appendChild(h("p", { text: "Quedaron sin ubicar:" }));
@@ -282,11 +432,11 @@
         sin.forEach(function (id) { ul.appendChild(h("li", null, datoBtn(porId(datos, id)))); });
         app.appendChild(ul);
       }
-      app.appendChild(bloqueCierre(1, f1.cerrada === "verificada" ? cuantos(f1.res) + " de " + datos.length + " bien" : ""));
+      app.appendChild(bloqueCierre(1, ver ? cuantos(f1.res) + " de " + datos.length + " bien" : ""));
     }
     app.appendChild(pieReiniciar());
   }
-  function avisoF1() { var a = document.getElementById("aviso-f1"); if (a) a.textContent = "Primero tocá un dato."; }
+  function avisoF1() { var a = document.getElementById("aviso-f1"); if (a) a.textContent = "Primero elegí una tarjeta de la bandeja."; }
 
   /* ----- Fase 2: conectá el modelo ----- */
   function verificarF2() {
@@ -310,14 +460,15 @@
         grupo.appendChild(h("button", { class: "opcion", type: "button", disabled: cerrada, "aria-pressed": String(f2.resp[p.id] === o.id), text: o.nombre,
           onclick: function () { f2.resp[p.id] = o.id; render(); anunciar(p.a + " y " + p.b + ": " + o.nombre + "."); } }));
       });
-      lista.appendChild(h("section", { class: "ficha par" + (ver ? (f2.res[p.id] ? " par--ok" : " par--mal") : "") },
-        h("h3", { text: p.a + " – " + p.b }), h("p", { class: "etiqueta", text: p.ayuda }), grupo, ver ? insignia(f2.res[p.id]) : null));
+      lista.appendChild(h("section", { class: "ficha par" },
+        h("h3", { text: p.a + " – " + p.b }), h("p", { class: "etiqueta", text: p.ayuda }), grupo));
     });
     app.appendChild(lista);
     app.appendChild(h("p", { class: "etiqueta", text: D.fase2.notas }));
     if (!cerrada) {
       var n = Object.keys(f2.resp).length;
-      app.appendChild(h("div", { class: "acciones" }, h("button", { class: "btn", type: "button", disabled: ui.ocupado, text: "Verificar (" + n + " de " + D.fase2.pares.length + " elegidas)", onclick: verificarF2 })));
+      var faltan2 = D.fase2.pares.length - n;
+      app.appendChild(botonVerificar(2, faltan2 ? "Falta" + (faltan2 === 1 ? " 1 par" : "n " + faltan2 + " pares") + " sin elegir." : "", verificarF2, "Verificar (" + n + " de " + D.fase2.pares.length + " elegidas)"));
     } else app.appendChild(bloqueCierre(2, ver ? cuantos(f2.res) + " de " + D.fase2.pares.length + " bien" : ""));
     app.appendChild(pieReiniciar());
   }
@@ -341,20 +492,22 @@
     encabezado(3);
     app.appendChild(h("p", { class: "consigna", text: D.fase3.consigna }));
     var ul = h("ul", { class: "filas filas--planilla" });
+    ul.appendChild(h("li", { class: "fila-planilla fila-planilla--titulos", "aria-hidden": "true" },
+      h("b", { text: "N° viaje" }), h("span", { text: "Tarjeta" }), h("span", { text: "Tipo" }), h("span", { text: "Precio" }), h("span", { class: "marca" })));
     D.fase3.filas.forEach(function (r) {
       var marcada = !!f3.marcas[r.id];
-      var cls = "fila-planilla" + (ver ? (f3.res[r.id] ? " fila-planilla--ok" : " fila-planilla--mal") : "");
+      var cls = "fila-planilla" + (cerrada && marcada ? " fila-planilla--marcada" : "");
       var b = h(cerrada ? "div" : "button", { class: cls, type: cerrada ? null : "button", "aria-pressed": cerrada ? null : String(marcada),
         onclick: cerrada ? null : function () { if (marcada) delete f3.marcas[r.id]; else f3.marcas[r.id] = true; render(); anunciar(r.id + (f3.marcas[r.id] ? " marcada como mal." : " sin marcar.")); } },
         h("b", { text: r.id }), h("span", { text: r.tarjeta }), h("span", { text: r.tipo }), h("span", { text: r.precio }),
-        h("span", { class: "marca", text: marcada ? "Mal ⚑" : "" }), ver ? insignia(f3.res[r.id]) : null);
+        h("span", { class: "marca", text: marcada ? "Mal ⚑" : "" }));
       ul.appendChild(h("li", null, b));
     });
     app.appendChild(ul);
     if (!cerrada) {
       var n = Object.keys(f3.marcas).length;
       app.appendChild(h("p", { class: "etiqueta", text: "Marcadas como mal: " + n }));
-      app.appendChild(h("div", { class: "acciones" }, h("button", { class: "btn", type: "button", disabled: ui.ocupado, text: "Verificar", onclick: verificarF3 })));
+      app.appendChild(botonVerificar(3, n ? "" : "No marcaron ninguna fila.", verificarF3));
     } else app.appendChild(bloqueCierre(3, ver ? "Planilla revisada" : ""));
     app.appendChild(pieReiniciar());
   }
@@ -478,6 +631,7 @@
       var F = D.fase4, f4 = S.f4;
       if (r[0]) {
         f4.cerrada = "resuelta"; f4.puntos = L.puntosF4(true, f4.pistas, f4.errores, F.puntosAcierto, F.costoPista);
+        avisarUnaVez("misterio");
         ui.respondiendo = false; ui.mensaje = null; render(); enfocarCierre(4); anunciar(F.mensajeAcierto);
       } else {
         f4.errores++;
@@ -550,6 +704,7 @@
   }
   function vistaFinal() {
     var t = total();
+    avisarUnaVez("puntos", { p: t });
     app.appendChild(h("p", { class: "etiqueta", text: "Resultado de " + S.equipo }));
     app.appendChild(h("div", { class: "final__puntos", "aria-label": t + " puntos", text: String(t) }));
     var partes = [1, 2, 3, 4].map(function (n) { return "Fase " + n + ": " + puntosDe(n) + (S["f" + n].cerrada === "tiempo" ? " (sin tiempo)" : ""); });
@@ -559,7 +714,7 @@
     if (S.f4.errores) desc.push(S.f4.errores + (S.f4.errores === 1 ? " respuesta mal" : " respuestas mal"));
     if (desc.length) app.appendChild(h("p", { class: "final__desglose", text: "Fase 4 con " + desc.join(" y ") + "." }));
     if (S.reinicios) app.appendChild(h("p", { class: "mensaje mensaje--mal", text: "Este equipo reinició el juego " + S.reinicios + (S.reinicios === 1 ? " vez." : " veces.") }));
-    app.appendChild(h("p", { class: "mensaje", text: "Díganlo en voz alta para el marcador." }));
+    app.appendChild(h("p", { class: "mensaje", text: "Los puntos ya viajaron al marcador del proyector. Si no aparecen, díganlos en voz alta." }));
     app.appendChild(ui.revelado ? bloqueExplicaciones(ui.revelado) : bloqueCodigo());
     app.appendChild(pieReiniciar());
   }
