@@ -41,6 +41,11 @@ p { margin: 0 0 .75rem; }
 a { color: var(--c-dato); }
 .app { max-width: 960px; margin: 0 auto; padding: 1rem; outline: none; }
 .app > * { animation: subir .45s var(--sube) both; }
+/* Cambio dentro de la misma vista (juegos.js, render): sin entradas repetidas, solo lo nuevo */
+.app.quieta > *, .app.quieta .caja, .app.quieta .caja__lista .dato, .app.quieta .pistas li, .app.quieta .mensaje { animation: none; }
+.app.quieta .caja__lista .dato.nuevo, .app.quieta .pistas li.nuevo, .app.quieta .mensaje.nuevo { animation: subir .3s var(--sube) both; }
+.app.quieta .mensaje--mal.nuevo { animation: sacudir .4s both; }
+.app.quieta .panel-tabla.entra { animation: entra .35s var(--sube); }
 .aviso { padding: 1rem; background: var(--c-marca); color: var(--c-led); }
 :focus-visible { outline: 3px solid var(--c-led); outline-offset: 2px; }
 
@@ -119,6 +124,7 @@ a { color: var(--c-dato); }
 .dato--ok { border: 1px solid var(--c-bien); color: var(--c-bien); background: rgba(57, 217, 138, .1); font-weight: 600; }
 .dato--mal { border: 1px solid var(--c-mal); color: var(--c-mal); background: rgba(255, 90, 106, .1); font-weight: 600; }
 .dato--fijo { cursor: default; }
+.dato--malpuesta { border-color: var(--c-mal); box-shadow: 0 0 0 1px var(--c-mal), 0 0 10px rgba(255, 90, 106, .35); }
 .porque { display: block; margin-top: .25rem; font-family: var(--f-texto); font-weight: 400; font-size: .9rem; color: var(--c-texto); }
 /* La bandeja queda fija abajo: las cajas siempre están a un arrastre de distancia */
 .bandeja { position: sticky; bottom: 0; z-index: 5; padding: .5rem .5rem .1rem; border: 1px solid var(--c-led); border-radius: var(--r) var(--r) 0 0; background: rgba(7, 11, 16, .97); box-shadow: 0 -10px 24px rgba(0, 0, 0, .55); }

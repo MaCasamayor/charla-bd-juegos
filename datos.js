@@ -86,7 +86,7 @@ window.DATOS = (function () {
           "Para sacar una tarjeta de una caja, tóquenla una vez: vuelve a la bandeja.",
           "Cuando estén seguros, toquen Verificar."
         ],
-        puntos: "Hay una sola verificación. Las cajas que no quedaron bien se marcan en rojo, sin decir qué tarjeta está mal. 15 bien = 3 puntos · 12 a 14 = 2 · 9 a 11 = 1."
+        puntos: "Hay una sola verificación. Las cajas que no quedaron bien se marcan en rojo, y cada tarjeta que está en una caja equivocada lleva un recuadro rojo. 15 bien = 3 puntos · 12 a 14 = 2 · 9 a 11 = 1."
       },
       puntaje: [ { minimo: 15, puntos: 3 }, { minimo: 12, puntos: 2 }, { minimo: 9, puntos: 1 } ],
       datos: datosF1
