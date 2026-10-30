@@ -124,10 +124,22 @@
   }
 
   /* ---------- render ---------- */
+  /* Dentro de la misma vista, un cambio no repite las animaciones de entrada (si no, la pantalla
+     titila a cada toque): la app queda «quieta» y solo se anima lo que no estaba antes. */
+  var ANIMADOS = ".mensaje, .pistas li, .caja__lista .dato", vistaPrevia = null;
+  function claveVista() {
+    var f = S["f" + S.fase];
+    return S.fase + "|" + (typeof S.fase === "number" && !S.inicios[S.fase] ? "consigna" : "") + "|" + ((f && f.cerrada) || "");
+  }
+  function firma(e) { var c = e.closest("[data-caja]"); return (c ? c.getAttribute("data-caja") : "") + "|" + e.textContent; }
   function render() {
     var tray = app.querySelector(".bandeja__fila");
     var sx = tray ? tray.scrollLeft : 0;
     var sy = window.scrollY;
+    var clave = claveVista(), quieta = clave === vistaPrevia, antes = {};
+    if (quieta) app.querySelectorAll(ANIMADOS).forEach(function (e) { antes[firma(e)] = true; });
+    vistaPrevia = clave;
+    app.classList.toggle("quieta", quieta);
     app.textContent = "";
     if (S.fase === "inicio") vistaInicio();
     else if (typeof S.fase === "number" && !S.inicios[S.fase]) vistaConsigna(S.fase);
@@ -137,6 +149,7 @@
     else if (S.fase === 4) vistaF4();
     else vistaFinal();
     if (ui.error) app.insertBefore(h("p", { class: "mensaje mensaje--mal", role: "alert", text: ui.error }), app.firstChild);
+    if (quieta) app.querySelectorAll(ANIMADOS).forEach(function (e) { if (!antes[firma(e)]) e.classList.add("nuevo"); });
     barraActualizar();
     var t2 = app.querySelector(".bandeja__fila");
     if (t2) t2.scrollLeft = sx;
@@ -180,7 +193,7 @@
     var res = h("div", { class: "resultado", id: "res-f" + n, tabindex: "-1", "aria-live": "polite" },
       h("div", { class: "grande", text: tiempo ? "Se acabó el tiempo · 0 puntos" : texto + " · " + pts(f.puntos) }));
     if (tiempo) res.appendChild(h("p", { text: "La fase cerró sin verificar. Las soluciones se ven en el proyector al final." }));
-    else res.appendChild(h("p", { text: (n === 1 ? "Las cajas en rojo quedaron incompletas." : "El celular solo dice bien o mal.") + " Las soluciones se ven en el proyector al final." }));
+    else res.appendChild(h("p", { text: (n === 1 ? "Las cajas en rojo quedaron incompletas; las tarjetas con recuadro rojo están en una caja equivocada." : "El celular solo dice bien o mal.") + " Las soluciones se ven en el proyector al final." }));
     var sig = n < D.fases ? n + 1 : "final";
     res.appendChild(h("div", { class: "acciones" }, h("button", { class: "btn", type: "button",
       text: n < D.fases ? "Seguir a la fase " + (n + 1) : "Ver el resultado", onclick: function () { cambiarFase(sig); } })));
@@ -269,13 +282,16 @@
 
   /* ----- Fase 1: ordenar ----- */
   /* Una tarjeta de la fase 1. En la bandeja se arrastra (o se toca y después se toca la caja);
-     en una caja, un toque la devuelve a la bandeja. Cerrada, no dice si está bien o mal. */
+     en una caja, un toque la devuelve a la bandeja. Verificada, la que quedó en una caja
+     equivocada lleva recuadro rojo (no dice cuál era la caja correcta). */
   function datoBtn(d) {
     var f1 = S.f1, cerrada = !!f1.cerrada, enCaja = !!f1.puestos[d.id];
-    var b = h(cerrada ? "div" : "button", { class: "dato" + (cerrada ? " dato--fijo" : ""), type: cerrada ? null : "button",
+    var malPuesta = f1.cerrada === "verificada" && enCaja && f1.res && f1.res[d.id] === false;
+    var b = h(cerrada ? "div" : "button", { class: "dato" + (cerrada ? " dato--fijo" : "") + (malPuesta ? " dato--malpuesta" : ""), type: cerrada ? null : "button",
       "aria-pressed": cerrada || enCaja ? null : String(f1.sel === d.id),
       "aria-label": cerrada ? null : d.texto + (enCaja ? ". Tocá para devolverla a la bandeja." : ". Arrastrala a su caja o tocala y después tocá la caja.") });
     b.appendChild(h("span", { text: d.texto }));
+    if (malPuesta) b.appendChild(h("span", { class: "solo-lector", text: " (en la caja equivocada)" }));
     if (cerrada) return b;
     b.addEventListener("click", function () {
       if (soltadoRecien) return;
